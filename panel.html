@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mantenimiento</title>
+<title>Mecánicos Millar</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg:#080c14; --panel:#0f1520; --border:#1a2236;
@@ -23,7 +24,7 @@ header{position:relative;z-index:2;display:flex;align-items:center;justify-conte
 h1{font-size:19px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#f1f5f9;}
 .conn-label{font-size:11px;font-weight:600;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;transition:color 0.3s;}
 .conn-label.online{color:var(--green);} .conn-label.offline{color:var(--red);}
-.clock{font-family:'Courier New',monospace;font-size:17px;color:var(--muted);letter-spacing:2px;}
+.clock{font-family:'Courier New',monospace;font-size:17px;color:#e2e8f0;letter-spacing:2px;font-weight:700;}
 
 .stats{position:relative;z-index:2;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 24px;background:rgba(8,12,20,0.9);border-bottom:1px solid var(--border);}
 .stat{display:flex;align-items:center;gap:7px;padding:6px 16px;border-radius:6px;background:var(--panel);border:1px solid var(--border);font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;user-select:none;}
@@ -36,16 +37,21 @@ h1{font-size:19px;font-weight:700;letter-spacing:4px;text-transform:uppercase;co
 .sd.y{background:var(--yellow);box-shadow:0 0 7px rgba(234,179,8,0.8);}
 .sd.r{background:var(--red);box-shadow:0 0 7px rgba(239,68,68,0.8);}
 .filter-hint{font-size:11px;color:var(--muted);letter-spacing:1px;font-style:italic;}
-.view-toggle{margin-left:auto;display:flex;gap:6px;}
+.view-toggle{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
 .toggle-btn{padding:5px 16px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all 0.2s;}
 .toggle-btn.active{background:var(--panel);color:var(--text);border-color:#2d3f5a;}
+.btn-excel{padding:5px 16px;border-radius:6px;border:1px solid rgba(34,197,94,0.4);background:rgba(34,197,94,0.08);color:var(--green);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all 0.2s;}
+.btn-excel:hover{background:rgba(34,197,94,0.15);border-color:var(--green);}
 
 main{position:relative;z-index:1;padding:24px;max-width:1200px;margin:0 auto;}
 .grid{display:grid;grid-template-columns:repeat(9,1fr);gap:12px;}
 
-.module{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 10px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;overflow:hidden;transition:transform 0.15s,border-color 0.3s,box-shadow 0.3s;user-select:none;-webkit-tap-highlight-color:transparent;animation:fi 0.25s ease;}
+.module{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 10px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;overflow:hidden;transition:transform 0.15s,border-color 0.3s,box-shadow 0.3s;user-select:none;-webkit-tap-highlight-color:transparent;animation:fi 0.25s ease;}
 @keyframes fi{from{opacity:0;transform:scale(0.92);}to{opacity:1;transform:scale(1);}}
-.module:hover{transform:translateY(-2px);} .module:active{transform:scale(0.96);}
+.module.clickable{cursor:pointer;}
+.module.clickable:hover{transform:translateY(-2px);}
+.module.clickable:active{transform:scale(0.96);}
+.module.readonly{cursor:default;}
 .module::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0;transition:background 0.4s;}
 .module.green{border-color:rgba(34,197,94,0.25);box-shadow:0 2px 16px rgba(34,197,94,0.07);}
 .module.yellow{border-color:rgba(234,179,8,0.3);box-shadow:0 2px 16px rgba(234,179,8,0.08);}
@@ -102,6 +108,40 @@ main{position:relative;z-index:1;padding:24px;max-width:1200px;margin:0 auto;}
 @keyframes tout{to{opacity:0;transform:translateX(16px);}}
 .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,0.12);transform:scale(0);animation:rip 0.55s linear;pointer-events:none;}
 @keyframes rip{to{transform:scale(5);opacity:0;}}
+
+/* MODAL CONTRASEÑA */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+.modal-overlay.hidden{display:none;}
+.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:36px 40px;display:flex;flex-direction:column;align-items:center;gap:18px;min-width:300px;box-shadow:0 20px 60px rgba(0,0,0,0.7);animation:slup 0.25s ease;}
+@keyframes slup{from{transform:translateY(18px);opacity:0;}to{transform:none;opacity:1;}}
+.modal-icon{font-size:38px;}
+.modal-title{font-size:15px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#f1f5f9;text-align:center;}
+.modal-sub{font-size:12px;color:var(--muted);letter-spacing:1px;text-align:center;line-height:1.6;}
+.modal-input{width:100%;padding:13px 16px;border-radius:8px;border:1px solid var(--border);background:#080c14;color:var(--text);font-family:'Courier New',monospace;font-size:22px;letter-spacing:10px;text-align:center;outline:none;transition:border-color 0.2s;}
+.modal-input:focus{border-color:#3d5a8a;}
+.modal-input.error{border-color:var(--red);animation:shake 0.35s ease;}
+@keyframes shake{0%,100%{transform:none;}20%,60%{transform:translateX(-7px);}40%,80%{transform:translateX(7px);}}
+.modal-btn{width:100%;padding:13px;border-radius:8px;border:none;background:var(--green);color:#080c14;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s;}
+.modal-btn:hover{opacity:0.85;}
+.modal-btn.secondary{background:transparent;color:var(--muted);border:1px solid var(--border);margin-top:-6px;}
+.modal-btn.secondary:hover{background:#1a2236;opacity:1;}
+.modal-error{font-size:12px;color:var(--red);letter-spacing:1px;min-height:16px;text-align:center;}
+
+/* MODAL EXCEL */
+.excel-modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:36px 40px;display:flex;flex-direction:column;gap:20px;min-width:340px;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.7);animation:slup 0.25s ease;}
+.excel-title{font-size:15px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#f1f5f9;display:flex;align-items:center;gap:10px;}
+.excel-row{display:flex;flex-direction:column;gap:6px;}
+.excel-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+.excel-date{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:#080c14;color:var(--text);font-size:14px;outline:none;transition:border-color 0.2s;}
+.excel-date:focus{border-color:#3d5a8a;}
+.excel-info{font-size:12px;color:var(--muted);text-align:center;letter-spacing:0.5px;}
+.excel-info span{color:var(--green);font-weight:700;}
+.excel-btns{display:flex;gap:10px;}
+.excel-btns button{flex:1;padding:12px;border-radius:8px;border:none;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s;}
+.excel-btns .btn-dl{background:var(--green);color:#080c14;}
+.excel-btns .btn-dl:hover{opacity:0.85;}
+.excel-btns .btn-cancel{background:var(--panel);color:var(--muted);border:1px solid var(--border);}
+.excel-btns .btn-cancel:hover{background:#1a2236;}
 </style>
 </head>
 <body>
@@ -109,7 +149,7 @@ main{position:relative;z-index:1;padding:24px;max-width:1200px;margin:0 auto;}
 <header>
   <div class="hd-left">
     <div class="live-dot" id="live-dot"></div>
-    <h1>Mantenimiento</h1>
+    <h1>Mecánicos Millar</h1>
   </div>
   <div style="display:flex;align-items:center;gap:20px">
     <span class="conn-label" id="conn-label">Conectando…</span>
@@ -123,13 +163,14 @@ main{position:relative;z-index:1;padding:24px;max-width:1200px;margin:0 auto;}
   <div class="stat fr" id="stat-red"    onclick="toggleFilter('red')"><div class="sd r"></div><span id="cnt-r">0</span>&nbsp;Alerta</div>
   <span class="filter-hint" id="filter-hint"></span>
   <div class="view-toggle">
-    <button class="toggle-btn active" id="btn-grid"   onclick="setView('grid')">🔲 Vista General</button>
-    <button class="toggle-btn"        id="btn-single" onclick="setView('single')">📱 Mi Módulo</button>
+    <button class="toggle-btn active" id="btn-grid"   onclick="requestView('grid')">🔲 Vista General</button>
+    <button class="toggle-btn"        id="btn-single" onclick="requestView('single')">📱 Mi Módulo</button>
+    <button class="btn-excel"                          onclick="openExcelModal()">📥 Descargar Excel</button>
   </div>
 </div>
 
 <main>
-  <div id="grid-view"><div class="grid" id="grid"></div></div>
+  <div id="grid-view" class="hidden"><div class="grid" id="grid"></div></div>
   <div id="single-view">
     <p class="picker-label">Selecciona tu módulo</p>
     <div class="picker" id="picker"></div>
@@ -138,53 +179,210 @@ main{position:relative;z-index:1;padding:24px;max-width:1200px;margin:0 auto;}
 </main>
 <div id="toasts"></div>
 
+<!-- MODAL CONTRASEÑA -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-icon" id="modal-icon">🔒</div>
+    <div class="modal-title" id="modal-title">Acceso requerido</div>
+    <div class="modal-sub">Ingresa la contraseña para acceder</div>
+    <input class="modal-input" id="modal-input" type="password" maxlength="10" placeholder="••••" autocomplete="off">
+    <div class="modal-error" id="modal-error"></div>
+    <button class="modal-btn" onclick="submitPassword()">Ingresar →</button>
+    <button class="modal-btn secondary" id="modal-cancel" onclick="cancelModal()" style="display:none">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL EXCEL -->
+<div class="modal-overlay hidden" id="excel-modal">
+  <div class="excel-modal-box">
+    <div class="excel-title">📥 Descargar Reporte Excel</div>
+    <div class="excel-row">
+      <label class="excel-label">Fecha inicio</label>
+      <input class="excel-date" type="date" id="date-from">
+    </div>
+    <div class="excel-row">
+      <label class="excel-label">Fecha fin</label>
+      <input class="excel-date" type="date" id="date-to">
+    </div>
+    <div class="excel-info" id="excel-info">Calculando registros...</div>
+    <div class="excel-btns">
+      <button class="btn-cancel" onclick="closeExcelModal()">Cancelar</button>
+      <button class="btn-dl"     onclick="downloadExcel()">⬇ Descargar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const MODULES=['M01','M02','M03','M04','M05','M06','M07','M08','M09','M10','M11','M12','M13','M14','M15','M16','M17','M18','M19','M20','M21','M22','M23','M24','M25','M26','M27'];
-const LABELS={green:'Operativo',yellow:'Atendiendo',red:'¡Alerta!'};
+const LABELS={green:'Operativo',yellow:'Atendiendo',red:'Alerta'};
 const NEXT={green:'red',red:'yellow',yellow:'green'};
-const states={};const timers={};
-MODULES.forEach(id=>{states[id]='green';timers[id]=null;});
-let selectedMod=null,activeFilter=null,ws;
+const states={};
+const timers={};
+MODULES.forEach(id=>{ states[id]='green'; timers[id]=Date.now(); });
+let selectedMod=null, activeFilter=null, ws;
 
-const WS_PROTO=location.protocol==='https:'?'wss:':'ws:';
-const WS_URL=WS_PROTO+'//'+location.host;
+// ── HISTORIAL ─────────────────────────────────────────────────────
+const STORAGE_KEY = 'mant_historial_v2';
+function loadHistory(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){ return []; } }
+function saveHistory(h){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(h)); }catch(e){} }
+
+function logChange(modulo, estadoAnterior, estadoNuevo, duracionMs){
+  const esRelevante =
+    (estadoAnterior==='red'    && estadoNuevo==='yellow') ||
+    (estadoAnterior==='yellow' && estadoNuevo==='green');
+  if(!esRelevante) return;
+  const fecha = new Date().toLocaleDateString('es-CO');
+  const durMinutos = parseFloat((duracionMs / 60000).toFixed(2));
+  const h = loadHistory();
+  h.push({ fecha, modulo, estadoAnterior, estadoNuevo, durMinutos });
+  if(h.length > 10000) h.splice(0, h.length - 10000);
+  saveHistory(h);
+}
+
+// ── WEBSOCKET ─────────────────────────────────────────────────────
+const WS_PROTO = location.protocol==='https:' ? 'wss:' : 'ws:';
+const WS_URL   = WS_PROTO + '//' + location.host;
 
 function connect(){
-  ws=new WebSocket(WS_URL);
-  ws.onopen=()=>setConn(true);
-  ws.onmessage=e=>{
-    const msg=JSON.parse(e.data);
-    if(msg.type==='init'){
-      Object.keys(msg.states).forEach(id=>{
-        states[id]=msg.states[id];
-        if((msg.states[id]==='red'||msg.states[id]==='yellow')&&!timers[id]) timers[id]=Date.now();
+  ws = new WebSocket(WS_URL);
+  ws.onopen  = () => setConn(true);
+  ws.onclose = () => { setConn(false); setTimeout(connect, 3000); };
+  ws.onerror = () => ws.close();
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if(msg.type === 'init'){
+      Object.keys(msg.states).forEach(id => {
+        const s = msg.states[id];
+        states[id] = s;
+        timers[id]  = Date.now(); // no tenemos el tiempo real del servidor, usamos ahora
       });
-      renderGrid();updateStats();
-    } else if(msg.type==='change'){
-      const prev=states[msg.id];
-      states[msg.id]=msg.state;
-      if(msg.state==='red'||msg.state==='yellow'){
-        if(prev==='green') timers[msg.id]=Date.now();
-      } else { timers[msg.id]=null; }
-      updateStats();
-      if(selectedMod===msg.id) renderBig();
-      if(prev!==msg.state) showToast(msg.id,msg.state);
-      renderGrid();
+      renderGrid(); updateStats();
+    } else if(msg.type === 'change'){
+      applyChange(msg.id, msg.state, false); // false = no reenviar al servidor
     }
   };
-  ws.onclose=()=>{setConn(false);setTimeout(connect,3000);};
-  ws.onerror=()=>ws.close();
 }
 
 function setConn(ok){
-  document.getElementById('live-dot').className='live-dot '+(ok?'online':'offline');
-  const l=document.getElementById('conn-label');
-  l.textContent=ok?'En línea ✓':'Reconectando…';
-  l.className='conn-label '+(ok?'online':'offline');
+  document.getElementById('live-dot').className = 'live-dot ' + (ok ? 'online' : 'offline');
+  const l = document.getElementById('conn-label');
+  l.textContent  = ok ? 'En línea ✓' : 'Reconectando…';
+  l.className    = 'conn-label ' + (ok ? 'online' : 'offline');
 }
 
-function sendChange(id,s){
-  if(ws&&ws.readyState===1) ws.send(JSON.stringify({type:'change',id,state:s}));
+function sendChange(id, s){
+  if(ws && ws.readyState === 1) ws.send(JSON.stringify({type:'change', id, state:s}));
+}
+
+// ── ACCESO ────────────────────────────────────────────────────────
+const unlocked={grid:false,single:false};
+const PASS={grid:'1',single:'1'};
+const ICONS={grid:'🔲',single:'📱'};
+const TITLES={grid:'Vista General',single:'Mi Módulo'};
+let pendingView=null;
+
+window.addEventListener('DOMContentLoaded',()=>{ updateStats(); openModal('grid'); connect(); });
+
+function openModal(view){
+  pendingView=view;
+  document.getElementById('modal-icon').textContent=ICONS[view];
+  document.getElementById('modal-title').textContent=TITLES[view];
+  document.getElementById('modal-input').value='';
+  document.getElementById('modal-error').textContent='';
+  const hayVistaActiva = unlocked.grid || unlocked.single;
+  document.getElementById('modal-cancel').style.display = hayVistaActiva ? 'block' : 'none';
+  document.getElementById('modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('modal-input').focus(),150);
+}
+function closeModal(){ document.getElementById('modal').classList.add('hidden'); }
+function cancelModal(){ closeModal(); }
+
+function submitPassword(){
+  const val=document.getElementById('modal-input').value;
+  const inp=document.getElementById('modal-input');
+  if(val===PASS[pendingView]){
+    unlocked[pendingView]=true; closeModal(); setView(pendingView);
+  } else {
+    inp.classList.add('error');
+    document.getElementById('modal-error').textContent='Contraseña incorrecta, intenta de nuevo';
+    inp.value='';
+    setTimeout(()=>{ inp.classList.remove('error'); inp.focus(); },400);
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && !document.getElementById('modal').classList.contains('hidden')) submitPassword();
+});
+function requestView(v){ if(unlocked[v]) setView(v); else openModal(v); }
+
+// ── EXCEL ─────────────────────────────────────────────────────────
+function openExcelModal(){
+  const today=new Date();
+  const toStr=d=>d.toISOString().slice(0,10);
+  const weekAgo=new Date(today); weekAgo.setDate(today.getDate()-7);
+  document.getElementById('date-from').value=toStr(weekAgo);
+  document.getElementById('date-to').value=toStr(today);
+  document.getElementById('excel-modal').classList.remove('hidden');
+  updateExcelInfo();
+  document.getElementById('date-from').oninput=updateExcelInfo;
+  document.getElementById('date-to').oninput=updateExcelInfo;
+}
+function closeExcelModal(){ document.getElementById('excel-modal').classList.add('hidden'); }
+
+function filteredHistory(){
+  const from=document.getElementById('date-from').value;
+  const to=document.getElementById('date-to').value;
+  if(!from||!to) return [];
+  return loadHistory().filter(r=>{
+    const parts=r.fecha.split('/');
+    if(parts.length!==3) return false;
+    const iso=`${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    return iso>=from && iso<=to;
+  });
+}
+function updateExcelInfo(){
+  const f=filteredHistory();
+  document.getElementById('excel-info').innerHTML=
+    `Se exportarán <span>${f.length}</span> registro${f.length!==1?'s':''} en el rango seleccionado`;
+}
+function downloadExcel(){
+  const rows=filteredHistory();
+  if(rows.length===0){
+    document.getElementById('excel-info').innerHTML='<span style="color:var(--red)">No hay registros en ese rango</span>';
+    return;
+  }
+  const data=rows.map(r=>({
+    'Fecha'             : r.fecha,
+    'Módulo'            : r.modulo,
+    'Transición'        : `${LABELS[r.estadoAnterior]} → ${LABELS[r.estadoNuevo]}`,
+    'Duración (minutos)': r.durMinutos
+  }));
+  const ws2=XLSX.utils.json_to_sheet(data);
+  ws2['!cols']=[{wch:12},{wch:8},{wch:28},{wch:20}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws2,'Historial');
+  const desde=document.getElementById('date-from').value.replace(/-/g,'');
+  const hasta=document.getElementById('date-to').value.replace(/-/g,'');
+  XLSX.writeFile(wb,`mecanicos_millar_${desde}_${hasta}.xlsx`);
+  closeExcelModal();
+  showToastSimple('✅ Excel descargado correctamente');
+}
+
+// ── LÓGICA PRINCIPAL ──────────────────────────────────────────────
+// reenviar=true cuando el cambio lo origina este cliente (toque del usuario)
+// reenviar=false cuando viene del servidor vía WebSocket
+function applyChange(id, s, reenviar=true){
+  const prev=states[id];
+  if(prev===s) return;
+  const ahora=Date.now();
+  const duracionMs=ahora-(timers[id]||ahora);
+  logChange(id, prev, s, duracionMs);
+  states[id]=s;
+  timers[id]=ahora;
+  if(reenviar) sendChange(id, s);
+  updateStats();
+  if(selectedMod===id) renderBig();
+  showToast(id,s);
+  renderGrid();
 }
 
 function toggleFilter(color){
@@ -203,40 +401,45 @@ function renderGrid(){
   if(visible.length===0){grid.innerHTML='<div class="empty-msg">✅ No hay módulos en este estado</div>';return;}
   visible.forEach(id=>{
     const div=document.createElement('div');
-    div.className=`module ${states[id]}`;div.id=`mod-${id}`;
+    div.className=`module readonly ${states[id]}`;
+    div.id=`mod-${id}`;
     div.innerHTML=`<span class="mod-id">${id}</span><div class="light"></div><span class="mod-label">${LABELS[states[id]]}</span><span class="mod-timer" id="timer-${id}"></span>`;
-    div.addEventListener('click',e=>{addRipple(div,e);sendChange(id,NEXT[states[id]]);});
     grid.appendChild(div);
   });
 }
 
 function updateStats(){
   let g=0,y=0,r=0;
-  Object.values(states).forEach(s=>{if(s==='green')g++;else if(s==='yellow')y++;else r++;});
+  Object.values(states).forEach(s=>{ if(s==='green')g++; else if(s==='yellow')y++; else r++; });
   document.getElementById('cnt-g').textContent=g;
   document.getElementById('cnt-y').textContent=y;
   document.getElementById('cnt-r').textContent=r;
 }
 
-function formatTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return m===0?`${s}s`:`${m}m ${String(s%60).padStart(2,'0')}s`;}
+function formatTime(ms){
+  const s=Math.floor(ms/1000), m=Math.floor(s/60);
+  return m===0?`${s}s`:`${m}m ${String(s%60).padStart(2,'0')}s`;
+}
 
 setInterval(()=>{
   const now=Date.now();
   MODULES.forEach(id=>{
     const el=document.getElementById(`timer-${id}`);
-    if(el) el.textContent=(timers[id]&&(states[id]==='red'||states[id]==='yellow'))?'⏱ '+formatTime(now-timers[id]):'';
+    if(el && (states[id]==='red'||states[id]==='yellow')) el.textContent='⏱ '+formatTime(now-timers[id]);
+    else if(el) el.textContent='';
   });
   const bt=document.getElementById('big-timer');
-  if(bt&&selectedMod&&timers[selectedMod]&&(states[selectedMod]==='red'||states[selectedMod]==='yellow'))
+  if(bt && selectedMod && (states[selectedMod]==='red'||states[selectedMod]==='yellow'))
     bt.textContent='⏱ '+formatTime(now-timers[selectedMod]);
+  else if(bt) bt.textContent='';
 },1000);
 
 function buildPicker(){
   const p=document.getElementById('picker');
   if(p.children.length) return;
   MODULES.forEach(id=>{
-    const b=document.createElement('button');b.className='pbtn';b.textContent=id;
-    b.addEventListener('click',()=>{document.querySelectorAll('.pbtn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');selectedMod=id;renderBig();});
+    const b=document.createElement('button'); b.className='pbtn'; b.textContent=id;
+    b.addEventListener('click',()=>{ document.querySelectorAll('.pbtn').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); selectedMod=id; renderBig(); });
     p.appendChild(b);
   });
 }
@@ -244,7 +447,7 @@ function buildPicker(){
 function renderBig(){
   if(!selectedMod) return;
   const s=states[selectedMod];
-  const tt=(timers[selectedMod]&&(s==='red'||s==='yellow'))?'⏱ '+formatTime(Date.now()-timers[selectedMod]):'';
+  const tt=(s==='red'||s==='yellow')?'⏱ '+formatTime(Date.now()-timers[selectedMod]):'';
   document.getElementById('big-container').innerHTML=`
     <div class="big-wrap ${s}" id="big-mod">
       <span class="big-id">${selectedMod}</span>
@@ -253,7 +456,10 @@ function renderBig(){
       <span class="big-timer" id="big-timer">${tt}</span>
       <span class="tap-hint">Toca para cambiar estado</span>
     </div>`;
-  document.getElementById('big-mod').addEventListener('click',e=>{addRipple(document.getElementById('big-mod'),e);sendChange(selectedMod,NEXT[states[selectedMod]]);});
+  document.getElementById('big-mod').addEventListener('click',e=>{
+    addRipple(document.getElementById('big-mod'),e);
+    applyChange(selectedMod, NEXT[states[selectedMod]], true);
+  });
 }
 
 function setView(v){
@@ -262,19 +468,23 @@ function setView(v){
   document.getElementById('grid-view').classList.toggle('hidden',v==='single');
   document.getElementById('single-view').classList.toggle('active',v==='single');
   if(v==='single') buildPicker();
+  if(v==='grid') renderGrid();
 }
 
 function showToast(id,state){
   const msgs={red:`🔴 ${id} — Solicita mecánico`,yellow:`🟡 ${id} — Mecánico en camino`,green:`🟢 ${id} — Resuelto`};
-  const t=document.createElement('div');t.className=`toast ${state}`;t.textContent=msgs[state];
-  document.getElementById('toasts').appendChild(t);setTimeout(()=>t.remove(),3200);
+  const t=document.createElement('div'); t.className=`toast ${state}`; t.textContent=msgs[state];
+  document.getElementById('toasts').appendChild(t); setTimeout(()=>t.remove(),3200);
 }
-
+function showToastSimple(msg){
+  const t=document.createElement('div'); t.className='toast green'; t.textContent=msg;
+  document.getElementById('toasts').appendChild(t); setTimeout(()=>t.remove(),3200);
+}
 function addRipple(el,e){
-  const r=el.getBoundingClientRect(),rip=document.createElement('div');rip.className='ripple';
+  const r=el.getBoundingClientRect(), rip=document.createElement('div'); rip.className='ripple';
   const sz=Math.max(r.width,r.height);
   rip.style.cssText=`width:${sz}px;height:${sz}px;left:${e.clientX-r.left-sz/2}px;top:${e.clientY-r.top-sz/2}px`;
-  el.appendChild(rip);setTimeout(()=>rip.remove(),650);
+  el.appendChild(rip); setTimeout(()=>rip.remove(),650);
 }
 
 setInterval(()=>{
@@ -282,7 +492,7 @@ setInterval(()=>{
   document.getElementById('clock').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
 },1000);
 
-connect();
+updateStats();
 </script>
 </body>
 </html>
